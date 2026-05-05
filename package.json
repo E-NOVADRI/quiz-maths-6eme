@@ -1,0 +1,18 @@
+{
+  "name": "quiz-maths-6eme",
+  "version": "2.0.0",
+  "description": "Application d'auto-évaluation Maths 6ème - Collège Moderne de Nafoun",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "bcryptjs": "^2.4.3",
+    "jsonwebtoken": "^9.0.2",
+    "cookie-parser": "^1.4.6",
+    "mongoose": "^8.0.0",
+    "dotenv": "^16.3.1"
+  }
+}
