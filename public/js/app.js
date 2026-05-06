@@ -205,7 +205,7 @@ function renderHome() {
       <div class="section-header">
         <div>
           <div class="section-title">Choisissez une leçon</div>
-          <div class="section-sub">${LESSONS.length} leçons · 10 à 15 questions par leçon</div>
+          <div class="section-sub">${LESSONS.length} leçons · 20 questions mélangées à chaque reprise</div>
         </div>
       </div>
       <div class="lesson-grid">${cards}</div>
@@ -217,7 +217,7 @@ function renderHome() {
 function startLesson(id) {
   const bank = QUESTION_BANK[id] || [];
   state.lessonId = id;
-  state.questions = shuffle(bank).slice(0, Math.min(15, bank.length));
+  state.questions = shuffle(bank).slice(0, Math.min(20, bank.length));
   state.current = 0;
   state.answers = [];
   state.selected = null;
@@ -245,10 +245,28 @@ function renderQuiz() {
     </button>`;
   }).join('');
 
+  // Construire le lien de révision si mauvaise réponse
+  let revisionHint = '';
+  if (state.confirmed && state.selected !== q.ans && q.part) {
+    const parts = (typeof COURSE_PARTS !== 'undefined') ? COURSE_PARTS : {};
+    const lessonParts = parts[state.lessonId] || {};
+    const partInfo = lessonParts[q.part];
+    if (partInfo) {
+      revisionHint = `<div class="revision-hint">
+        <span class="rh-icon">${partInfo.icon}</span>
+        <div>
+          <div class="rh-label">Révise cette partie du cours :</div>
+          <div class="rh-part">${partInfo.label}</div>
+        </div>
+      </div>`;
+    }
+  }
+
   const feedback = state.confirmed ? `
   <div class="feedback ${state.selected === q.ans ? 'ok' : 'nok'}">
     ${state.selected === q.ans ? '✓ Correct ! ' : '✗ Incorrect. '}${q.expl}
-  </div>` : '';
+  </div>
+  ${revisionHint}` : '';
 
   const navBtn = state.confirmed
     ? `<button class="btn btn-primary" onclick="nextQ()">${state.current < total - 1 ? 'Question suivante →' : 'Voir les résultats'}</button>`
@@ -308,7 +326,11 @@ async function finishQuiz() {
   const correct = state.answers.filter(a => a.selected === a.correct).length;
   const total = state.answers.length;
   const lesson = LESSONS.find(l => l.id === state.lessonId);
-  state.lastResult = { lessonId: state.lessonId, lessonTitle: lesson.title, correct, total, percent: Math.round(correct / total * 100) };
+  // Collecter les parties à réviser (questions ratées)
+  const wrongParts = state.answers
+    .map((a, i) => a.selected !== a.correct ? state.questions[i].part : null)
+    .filter(Boolean);
+  state.lastResult = { lessonId: state.lessonId, lessonTitle: lesson.title, correct, total, percent: Math.round(correct / total * 100), wrongParts };
   // Enregistrer sur le serveur
   try {
     await api('POST', '/api/scores', {
@@ -365,8 +387,28 @@ function renderResult() {
           <button class="btn" onclick="go('home')">📚 Autres leçons</button>
           <button class="btn" onclick="go('dashboard')">📊 Mon bilan</button>
         </div>
+        ${buildRevisionSummary(r)}
       </div>
     </div>
+  </div>`;
+}
+
+function buildRevisionSummary(r) {
+  if (!r.wrongParts || r.wrongParts.length === 0) return '';
+  const parts = (typeof COURSE_PARTS !== 'undefined') ? COURSE_PARTS : {};
+  const lessonParts = parts[r.lessonId] || {};
+  // Dédupliquer les parties à réviser
+  const seen = new Set();
+  const items = r.wrongParts
+    .filter(p => p && lessonParts[p] && !seen.has(p) && seen.add(p))
+    .map(p => {
+      const info = lessonParts[p];
+      return `<div class="rev-item"><span>${info.icon}</span> ${info.label}</div>`;
+    }).join('');
+  if (!items) return '';
+  return `<div class="revision-summary">
+    <div class="rev-title">📌 Parties à retravailler :</div>
+    ${items}
   </div>`;
 }
 
