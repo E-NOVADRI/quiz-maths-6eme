@@ -80,18 +80,48 @@ function topbar(extra = '') {
   const u = state.user;
   return `
   <div class="topbar">
-    <div class="topbar-brand">
-      📐 Quiz Maths 6ème
-      <span>Collège Moderne de Nafoun</span>
-    </div>
+    <div class="topbar-brand">📐 Quiz Maths 6ème <span>Collège de Nafoun</span></div>
     <div class="topbar-right">
       ${extra}
       <div class="user-badge">Bonjour, <strong>${u.name}</strong></div>
-      ${u.role === 'admin' ? `<button class="btn btn-sm" onclick="go('admin')">👨‍🏫 Admin</button>` : ''}
+      ${u.role === 'admin' ? '<button class="btn btn-sm" onclick="go(`admin`)">👨‍🏫 Admin</button>' : ''}
       <button class="btn btn-sm" onclick="go('dashboard')">📊 Mon bilan</button>
       <button class="btn btn-sm" onclick="logout()">Déconnexion</button>
     </div>
+    <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <div class="mobile-drawer" id="mobile-drawer">
+    <div class="drawer-overlay" onclick="closeDrawer()"></div>
+    <div class="drawer-panel">
+      <div class="drawer-user">
+        <div class="du-name">${u.name}</div>
+        <div class="du-role">${u.role === 'admin' ? '👨‍🏫 Professeur' : '👨‍🎓 Élève'}${u.class ? ' · ' + u.class : ''}</div>
+      </div>
+      <button class="drawer-btn" onclick="closeDrawer(); go('home')"><span class="icon">📚</span> Leçons</button>
+      <button class="drawer-btn" onclick="closeDrawer(); go('dashboard')"><span class="icon">📊</span> Mon bilan</button>
+      ${u.role === 'admin' ? '<button class="drawer-btn" onclick="closeDrawer(); go(`admin`)"><span class="icon">&#128104;&#8205;&#127979;</span> Admin</button>' : ''}
+      <div style="flex:1"></div>
+      <button class="drawer-btn danger" onclick="closeDrawer(); logout()"><span class="icon">🚪</span> Déconnexion</button>
+    </div>
   </div>`;
+}
+
+function toggleDrawer() {
+  const drawer = document.getElementById('mobile-drawer');
+  const btn = document.getElementById('hamburger-btn');
+  if (!drawer) return;
+  const isOpen = drawer.classList.contains('open');
+  if (isOpen) { drawer.classList.remove('open'); btn && btn.classList.remove('open'); }
+  else { drawer.classList.add('open'); btn && btn.classList.add('open'); }
+}
+
+function closeDrawer() {
+  const drawer = document.getElementById('mobile-drawer');
+  const btn = document.getElementById('hamburger-btn');
+  if (drawer) drawer.classList.remove('open');
+  if (btn) btn.classList.remove('open');
 }
 
 // ── LOGIN ────────────────────────────────────────────────────────────────────
@@ -704,6 +734,8 @@ async function init() {
 
 // Expose globals
 window.doLogin = doLogin;
+window.toggleDrawer = toggleDrawer;
+window.closeDrawer = closeDrawer;
 window.logout = logout;
 window.go = go;
 window.startLesson = startLesson;
